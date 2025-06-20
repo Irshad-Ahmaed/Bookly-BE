@@ -1,0 +1,9 @@
+fastapi[standard]
+dotenv
+uvicorn
+asyncpg
+pydantic-settings
+sqlmodel
+alembic
+passlib
+bcrypt
