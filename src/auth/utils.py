@@ -11,6 +11,7 @@ passwd_context = CryptContext(
 
 ACCESS_TOKEN_EXPIRY = 3600
 
+
 def generate_passwd_hash(password:str)-> str:
     hash_pass = passwd_context.hash(password)
 
@@ -39,7 +40,7 @@ def create_access_token(user_data: dict, expiry: timedelta = None, refresh: bool
 def decode_token(token: str)-> dict:
     try:
         token_data = jwt.decode(
-            token=token,
+            token,
             key=config.JWT_SECRET_KEY,
             algorithms=[config.JWT_ALGO]
         )
