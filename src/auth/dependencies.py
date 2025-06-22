@@ -1,21 +1,34 @@
 from fastapi import Request, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from .utils import decode_token
+from src.db.redis import check_token_in_blocklist
 
 class TokenBearer(HTTPBearer):
     def __init__(self, auto_error=True):
         super().__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request)-> HTTPAuthorizationCredentials | None:
+        # Get the scheme, and credentials
         credentials = await super().__call__(request)
 
         token = credentials.credentials
-        
+        # Check if the token is valid one
         token_data = decode_token(token)
 
-        if not self.valid_token:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid or Expired Token')
+        if not self.valid_token(token):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
+                "error": 'Invalid or Expired Token',
+                "resolution": "Please get new token"
+            })
+
+        # Check if token present in redis
+        if await check_token_in_blocklist(token_data['jti']):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
+                "error":'This Token is Invalid or Revoked',
+                "resolution": "Please get new token"
+            })
         
+        # This method will override by child class
         self.verify_token_data(token_data)
 
         return token_data
