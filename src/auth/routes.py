@@ -6,7 +6,7 @@ from src.db.main import get_session
 from .utils import create_access_token, verify_passwd
 from fastapi.responses import JSONResponse
 from datetime import timedelta, datetime
-from .dependencies import RefreshTokenBearer, AccessTokenBearer
+from .dependencies import RefreshTokenBearer, AccessTokenBearer, get_current_user
 from src.db.redis import add_jti_to_blocklist
 
 auth_router = APIRouter()
@@ -87,6 +87,12 @@ async def access_token_with_refresh(token_details: dict = Depends(RefreshTokenBe
         )
 
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or Expired token")
+
+
+@auth_router.get('/me')
+async def current_user(user = Depends(get_current_user)):
+
+    return user
 
 @auth_router.get('/logout')
 async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):

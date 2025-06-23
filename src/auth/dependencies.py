@@ -1,7 +1,12 @@
-from fastapi import Request, HTTPException, status
+from fastapi import Request, HTTPException, status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from .utils import decode_token
 from src.db.redis import check_token_in_blocklist
+from src.db.main import get_session
+from sqlmodel.ext.asyncio.session import AsyncSession
+from .service import UserService
+
+user_service = UserService()
 
 class TokenBearer(HTTPBearer):
     def __init__(self, auto_error=True):
@@ -21,7 +26,7 @@ class TokenBearer(HTTPBearer):
                 "resolution": "Please get new token"
             })
 
-        # Check if token present in redis
+        # Check if token jti present in redis - If present means it's already revoked
         if await check_token_in_blocklist(token_data['jti']):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
                 "error":'This Token is Invalid or Revoked',
@@ -53,3 +58,11 @@ class RefreshTokenBearer(TokenBearer):
         if token_data and not token_data['refresh']:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Provide a Refresh Token')
         
+
+
+async def get_current_user(token_details: dict = Depends(AccessTokenBearer()), session: AsyncSession = Depends(get_session)):
+    user_email = token_details['user']['email']
+
+    user = await user_service.get_user_by_email(user_email, session)
+
+    return user
