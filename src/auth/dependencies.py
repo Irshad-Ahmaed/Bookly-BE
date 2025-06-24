@@ -5,6 +5,8 @@ from src.db.redis import check_token_in_blocklist
 from src.db.main import get_session
 from sqlmodel.ext.asyncio.session import AsyncSession
 from .service import UserService
+from typing import List
+from .models import User
 
 user_service = UserService()
 
@@ -66,3 +68,16 @@ async def get_current_user(token_details: dict = Depends(AccessTokenBearer()), s
     user = await user_service.get_user_by_email(user_email, session)
 
     return user
+
+class RoleChecker():
+    def __init__(self, allowed_roles: List[str]) -> None:
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: User = Depends(get_current_user)) -> bool | HTTPException:
+        if current_user.role in self.allowed_roles:
+            return True
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail='You are not allowed to perform this action'
+        )

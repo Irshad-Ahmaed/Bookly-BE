@@ -30,15 +30,19 @@ class BookService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch book")
 
-    async def create_book(self, book_data: BookCreateModel, session: AsyncSession):
+    async def create_book(self, userID: str, book_data: BookCreateModel, session: AsyncSession):
         try:
-            new_book = Book(**book_data.model_dump())
+            data = book_data.model_dump()
+            new_book = Book(**data)
+            new_book.user_id = userID
+            
             session.add(new_book)
             await session.commit()
             await session.refresh(new_book)
             return new_book
-        except SQLAlchemyError:
+        except SQLAlchemyError as e:
             await session.rollback()
+            print("CREATE ERROR:", str(e))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create book")
 

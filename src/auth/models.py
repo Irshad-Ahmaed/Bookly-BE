@@ -20,6 +20,7 @@ class User(SQLModel, table=True):
     email: str = Field(sa_column=Column(pg.TEXT, nullable=False, index=True))
     first_name: str = Field(sa_column=Column(pg.TEXT, nullable=False, index=True))
     last_name: str = Field(sa_column=Column(pg.TEXT, nullable=False, index=True))
+    role: str = Field(sa_column=Column(pg.TEXT, nullable=False, index=True, server_default="user"))
     password: str = Field(sa_column=Column(pg.TEXT, nullable=False), exclude=True)
     is_verified: bool = Field(sa_column=Column(pg.BOOLEAN, nullable=False, index=True, default=False))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP(timezone=True), server_default=func.now()))
