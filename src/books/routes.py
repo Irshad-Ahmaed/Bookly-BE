@@ -5,6 +5,7 @@ from ..db.main import get_session
 from src.books.service import BookService
 from src.books.schemas import Book, BookInfo, BookCreateModel, BookUpdateModel
 from src.auth.dependencies import AccessTokenBearer, RoleChecker
+import uuid
 
 book_router = APIRouter()
 book_service = BookService()
@@ -13,8 +14,12 @@ access_token_bearer = AccessTokenBearer()
 
 @book_router.get('/', response_model=List[Book], status_code=status.HTTP_200_OK, dependencies=[role_checker])
 async def get_all_books(session: AsyncSession = Depends(get_session), user_detail_from_token: dict = Depends(access_token_bearer)) -> List[dict]:
-    print(user_detail_from_token)
     return await book_service.get_all_books(session)
+
+
+@book_router.get('/user/{user_id}', response_model=List[BookInfo], status_code=status.HTTP_200_OK, dependencies=[role_checker])
+async def get_user_books(userID: uuid.UUID, session: AsyncSession = Depends(get_session), user_detail_from_token: dict = Depends(access_token_bearer)) -> List[dict]:
+    return await book_service.get_user_books(userID, user_detail_from_token, session)
 
 
 @book_router.get('/{book_uid}', response_model=BookInfo, status_code=status.HTTP_200_OK, dependencies=[role_checker])

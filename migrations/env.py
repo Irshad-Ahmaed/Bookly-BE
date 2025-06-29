@@ -7,8 +7,8 @@ from alembic import context
 from sqlmodel import SQLModel
 
 from src.config import config as AppConfig  # Your config with DATABASE_URL
-from src.auth.models import User
-from src.books.models import Book
+from src.db.models import User
+from src.db.models import Book
 
 # Alembic Config
 config = context.config

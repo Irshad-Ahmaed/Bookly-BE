@@ -1,9 +1,13 @@
+import uuid
 from fastapi import HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, desc
 from sqlalchemy.exc import SQLAlchemyError
 from .schemas import BookCreateModel, BookUpdateModel
-from .models import Book
+from src.db.models import Book
+from src.auth.service import UserService
+
+user_services = UserService()
 
 
 class BookService:
@@ -14,6 +18,28 @@ class BookService:
             result = await session.exec(statement)
             return result.all()
         except SQLAlchemyError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch books")
+
+    async def get_user_books(self, userID: uuid.UUID, user_detail_from_token: dict, session: AsyncSession):
+        verify_userID = await user_services.verify_user_id(userID, user_detail_from_token, session)
+        
+        if not verify_userID:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to perform this action")
+        
+        try:
+            statement = select(Book).where(
+                Book.user_id == userID).order_by(desc(Book.created_at))
+            if_user_have_books = await session.exec(statement)
+
+            if if_user_have_books is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No books found")
+
+            return if_user_have_books.all()
+        except SQLAlchemyError:
+            await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch books")
 
@@ -35,7 +61,7 @@ class BookService:
             data = book_data.model_dump()
             new_book = Book(**data)
             new_book.user_id = userID
-            
+
             session.add(new_book)
             await session.commit()
             await session.refresh(new_book)
